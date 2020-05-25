@@ -4,7 +4,7 @@ values=("." "." "." "." "." "." "." "." ".")
 
 function display_table {
     clear
-
+    echo "You are $my_char"
     echo "┌───┬───┬───┐"
     echo "│ $1 │ $2 │ $3 │"
     echo "├───┼───┼───┤"
@@ -27,6 +27,10 @@ function display_cell_numbers {
 function call_win {
     display_table ${values[*]}
     echo "$1 win"
+    if [[ $my_char == '0' ]]
+    then
+        rm "/tmp/x0_fifo"
+    fi
     exit
 }
 
@@ -67,30 +71,22 @@ function check_win {
     fi
 }
 
-mkfifo "/tmp/x0_fifo"
-
-turn="$1"
-if [[ -z $turn || ($turn != 'x' && $turn != '0') ]]
+if [[ -p "/tmp/x0_fifo" ]]
 then
-    echo "Usage:"
-    echo "'bash x0.sh x' on first terminal"
-    echo "'bash x0.sh 0' on second terminal"
-    exit 0
-fi
-
-my_char=$turn
-if [[ $turn == '0' ]]
-then
-    other_char='x'
+    turn="other"
+    my_char="0"
+    other_char="x"
 else
-    other_char='0'
+    mkfifo "/tmp/x0_fifo"
+    turn="my"
+    my_char="x"
+    other_char="0"
 fi
-
 
 
 while true 
 do
-    if [[ $turn == 'x' ]]
+    if [[ $turn == "my" ]]
     then
         display_table ${values[*]}
         echo "Enter cell number"
@@ -123,7 +119,7 @@ do
         values[$((3*$x + $y))]=$my_char
         display_table ${values[*]}
         echo $cell_number > "/tmp/x0_fifo"
-        turn="0"
+        turn="other"
     else
         display_table ${values[*]}
         cell_number="$(cat "/tmp/x0_fifo")"
@@ -131,7 +127,7 @@ do
         y=${cell_number:1:1}
         echo $cell_number
         values[$((3*$x + $y))]=$other_char
-        turn="x"
+        turn="my"
     fi
     check_win ${values[*]}
 done
