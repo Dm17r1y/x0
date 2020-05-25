@@ -2,6 +2,18 @@
 
 values=("." "." "." "." "." "." "." "." ".")
 
+if [[ -p "/tmp/x0_fifo" ]]
+then
+    turn="other"
+    my_char="0"
+    other_char="x"
+else
+    mkfifo "/tmp/x0_fifo"
+    turn="my"
+    my_char="x"
+    other_char="0"
+fi
+
 function display_table {
     clear
     echo "You are $my_char"
@@ -13,6 +25,14 @@ function display_table {
     echo "│ $7 │ $8 │ $9 │"
     echo "└───┴───┴───┘"
 }
+
+function clean_fifo {
+    if [[ $my_char == '0' ]]
+    then
+        rm "/tmp/x0_fifo"
+    fi
+}
+
 
 function display_cell_numbers {
     echo "┌────┬────┬────┐"
@@ -27,10 +47,6 @@ function display_cell_numbers {
 function call_win {
     display_table ${values[*]}
     echo "$1 win"
-    if [[ $my_char == '0' ]]
-    then
-        rm "/tmp/x0_fifo"
-    fi
     exit
 }
 
@@ -71,18 +87,7 @@ function check_win {
     fi
 }
 
-if [[ -p "/tmp/x0_fifo" ]]
-then
-    turn="other"
-    my_char="0"
-    other_char="x"
-else
-    mkfifo "/tmp/x0_fifo"
-    turn="my"
-    my_char="x"
-    other_char="0"
-fi
-
+trap clean_fifo EXIT
 
 while true 
 do
